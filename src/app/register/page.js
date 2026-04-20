@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role') || 'STUDENT';
   
   const [formData, setFormData] = useState({
     name: '',
@@ -15,16 +17,31 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Role visual mapping
+  const roleStyles = {
+    STUDENT: { title: 'Student', color: 'var(--accent-primary)', icon: '🎓' },
+    WARDEN: { title: 'Warden', color: 'var(--accent-secondary)', icon: '🛡️' },
+    SECURITY: { title: 'Security', color: 'var(--warning)', icon: '🔐' }
+  };
+
+  const currentStyle = roleStyles[role] || roleStyles.STUDENT;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      const payload = { ...formData, role };
+      // Omit roomNumber if not a student
+      if (role !== 'STUDENT') {
+        delete payload.roomNumber;
+      }
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -34,7 +51,7 @@ export default function RegisterPage() {
       }
 
       // Success - redirect to login
-      router.push('/login?role=STUDENT&registered=true');
+      router.push(`/login?role=${role}&registered=true`);
       
     } catch (err) {
       setError(err.message);
@@ -56,20 +73,20 @@ export default function RegisterPage() {
         display: 'flex',
         flexDirection: 'column',
         gap: '24px',
-        borderTop: '4px solid var(--accent-primary)',
-        '--accent-color': 'var(--accent-primary)',
-        '--accent-glow': 'var(--accent-primary-glow)'
+        borderTop: `4px solid ${currentStyle.color}`,
+        '--accent-color': currentStyle.color,
+        '--accent-glow': currentStyle.color.replace(')', ', 0.35)').replace('var(', 'rgba(')
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ 
             fontSize: '3rem', 
             marginBottom: '16px',
-            filter: 'drop-shadow(0 0 15px var(--accent-primary))'
+            filter: `drop-shadow(0 0 15px ${currentStyle.color})`
           }}>
-            🎓
+            {currentStyle.icon}
           </div>
           <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>
-            Student <span style={{ color: 'var(--accent-primary)' }}>Sign Up</span>
+            {currentStyle.title} <span style={{ color: currentStyle.color }}>Sign Up</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
             Create your account to access the hostel portal
@@ -100,11 +117,12 @@ export default function RegisterPage() {
               placeholder="e.g. John Doe"
               value={formData.name}
               onChange={handleChange}
+              style={{ '--accent-color': currentStyle.color }}
               required
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: role === 'STUDENT' ? '2fr 1fr' : '1fr', gap: '12px' }}>
             <div>
               <label>Username / ID</label>
               <input 
@@ -114,21 +132,25 @@ export default function RegisterPage() {
                 placeholder="e.g. john_d"
                 value={formData.username}
                 onChange={handleChange}
+                style={{ '--accent-color': currentStyle.color }}
                 required
               />
             </div>
-            <div>
-              <label>Room No.</label>
-              <input 
-                name="roomNumber"
-                type="text" 
-                className="input-glass" 
-                placeholder="A-101"
-                value={formData.roomNumber}
-                onChange={handleChange}
-                required
-              />
-            </div>
+            {role === 'STUDENT' && (
+              <div>
+                <label>Room No.</label>
+                <input 
+                  name="roomNumber"
+                  type="text" 
+                  className="input-glass" 
+                  placeholder="A-101"
+                  value={formData.roomNumber}
+                  onChange={handleChange}
+                  style={{ '--accent-color': currentStyle.color }}
+                  required={role === 'STUDENT'}
+                />
+              </div>
+            )}
           </div>
           
           <div>
@@ -139,7 +161,8 @@ export default function RegisterPage() {
               className="input-glass" 
               placeholder="••••••••"
               value={formData.password}
-                onChange={handleChange}
+              onChange={handleChange}
+              style={{ '--accent-color': currentStyle.color }}
               required
             />
           </div>
@@ -150,7 +173,8 @@ export default function RegisterPage() {
             style={{ 
               marginTop: '12px', 
               height: '52px',
-              fontSize: '1.1rem'
+              fontSize: '1.1rem',
+              background: currentStyle.color
             }}
             disabled={loading}
           >
@@ -160,7 +184,7 @@ export default function RegisterPage() {
 
         <div style={{ textAlign: 'center', marginTop: '8px' }}>
           <button 
-            onClick={() => router.push('/login?role=STUDENT')}
+            onClick={() => router.push(`/login?role=${role}`)}
             style={{ 
               background: 'none', 
               border: 'none', 
@@ -170,11 +194,19 @@ export default function RegisterPage() {
               fontWeight: '500'
             }}
           >
-            Already have an account? <span style={{ color: 'var(--accent-primary)' }}>Log In</span>
+            Already have an account? <span style={{ color: currentStyle.color }}>Log In</span>
           </button>
         </div>
 
       </div>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="container flex-center" style={{ minHeight: '100vh' }}>Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

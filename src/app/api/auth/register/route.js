@@ -4,11 +4,20 @@ import prisma from '@/lib/prisma';
 
 export async function POST(req) {
   try {
-    const { username, password, name, roomNumber } = await req.json();
+    const { username, password, name, roomNumber, role } = await req.json();
 
-    if (!username || !password || !name || !roomNumber) {
+    const validRole = ['STUDENT', 'WARDEN', 'SECURITY'].includes(role) ? role : 'STUDENT';
+
+    if (!username || !password || !name) {
       return NextResponse.json(
-        { error: 'All fields (name, username, password, roomNumber) are required' },
+        { error: 'Name, username, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (validRole === 'STUDENT' && !roomNumber) {
+      return NextResponse.json(
+        { error: 'Room number is required for students' },
         { status: 400 }
       );
     }
@@ -28,14 +37,14 @@ export async function POST(req) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with STUDENT role
+    // Create user
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
         name,
-        roomNumber,
-        role: 'STUDENT',
+        roomNumber: validRole === 'STUDENT' ? roomNumber : null,
+        role: validRole,
       },
     });
 

@@ -161,27 +161,25 @@ function LoginForm() {
           </button>
         </form>
 
-        {role === 'STUDENT' && (
-          <div style={{ textAlign: 'center', marginTop: '0px' }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Don't have an account? {' '}
-              <button 
-                onClick={() => router.push('/register')}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: currentStyle.color, 
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  textDecoration: 'underline'
-                }}
-              >
-                Sign up now
-              </button>
-            </p>
-          </div>
-        )}
+        <div style={{ textAlign: 'center', marginTop: '0px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            Don't have an account? {' '}
+            <button 
+              onClick={() => router.push(`/register?role=${role}`)}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: currentStyle.color, 
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                textDecoration: 'underline'
+              }}
+            >
+              Sign up now
+            </button>
+          </p>
+        </div>
 
         <div style={{ textAlign: 'center', marginTop: '8px' }}>
           <button 
